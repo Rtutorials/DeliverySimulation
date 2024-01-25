@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+    
+    <!-- import required libraries here -->
+    <script type="text/javascript" src="../lib/d3.v5.min.js"></script>
+    <script type="text/javascript" src="../lib/topojson.v2.min.js"></script>
+    <script type="text/javascript" src="../lib/d3-tip.min.js"></script>
+    <script type="text/javascript" src="../lib/d3-geo-projection.v2.min.js"></script>
+    <script type="text/javascript" src="../lib/d3-legend.min.js"></script>
+
+    
+    <style>
+    .button {
+        /* position: relative; */
+
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        padding: 0.5em 1em;
+        border: 0;
+        border-radius: 0.5em;
+        background-color: pink;
+        box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        }
+        .button2 {
+        /* position: relative; */
+
+        position: absolute;
+        top: 10px;
+        left: 100px;
+        padding: 0.5em 1em;
+        border: 0;
+        border-radius: 0.5em;
+        background-color: pink;
+        box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        }
+        .button:active {
+        top: 2px;
+        left: 1px;
+        box-shadow: none;
+        }
+        .legend{
+            position: absolute;
+             top: 10px;
+            right: 100px;
+        }
+    </style>
+
+    <title></title>
+</head>
+
+
+<body>
+  
+    </select>
+  
+    <button type="button" class = "button" onclick="startSimulation()">Start</button>
+
+    <button type="button" class = "button2" onclick="resetSimulation()">Reset</button>
+
+    <div class="legend">
+        <svg id="my_dataviz" height=300 width=450></svg>
+    </div>
+
+    <script>
+    
+        var width = 1000
+        var height = 1200
+
+        margin = ({top: 20, right: 30, bottom: 40, left: 70})
+
+
+        var svg = d3.select("body")
+        .append("svg")
+        .attr("width",  width)
+        .attr("height", height)
+        .attr("transform",
+        "translate(" + margin.left + "," + margin.top + ")")
+        
+      
+        var projection2 = d3.geoMercator().center([43.55 ,1.5]).scale(400000)
+                        .translate([100,100])
+
+
+        var data1 = d3.csv("driver_coordinates_timestamps.csv")
+        var data2 = d3.csv("output_reshaped.csv")
+        var data3 = d3.json("Toulouse.json")
+        var data4 = d3.csv("restaurant_coordinates.csv")
+        var data5 = d3.csv("customer_coordinates.csv")
+        var start = false
+        Promise.all([
+
+            data1,data3,data2,data4,data5
+            
+        ]).then(
+            function(data){
+
+
+                ready(data[0],data[1],data[2],data[3],data[4])
+
+                startSimulation = function(){
+
+
+                
+                    drivers = data[2]
+
+                    
+                    if(start == false)
+                    {   
+                        start = true
+                        for(var i = 1;i<drivers.length;i++){
+
+
+                        doSetTimeout(drivers,i)
+                        }
+                    }
+                
+                
+                
+                }
+            }
+
+            
+        
+        );
+
+       
+        var timeOUtTimer = []
+      
+        function doSetTimeout(drivers,i) {
+            timeOUtTimer.push( setTimeout(function() {
+                
+                
+                svg.selectAll(".cic").remove()
+                svg.selectAll(".txt").remove()
+
+
+                for(var j =0;j<20;j++){
+                    x1 = projection2([drivers[i-1]["y"+j],drivers[i-1]["x"+j]])[0]
+                    y1 = projection2([drivers[i-1]["y"+j],drivers[i-1]["x"+j]])[1]
+
+                    svg.append( "circle" )
+                        .attr("class","cic")
+                        //.attr( "class", "node" )
+                        .attr( "r", 2 )
+                        .attr( "cx", x1)
+                        .attr( "cy", y1)
+                        .style("fill","red")
+
+                    var str = drivers[i-1]['z'+j]
+
+                    svg.append("text")
+                        .attr("class","txt")
+                        .attr("x",x1)
+                        .attr("y",y1+2)
+                        .text(str)
+                 }
+
+            
+            }, 1000*i));
+
+        }
+        function resetSimulation(){
+            timeOUtTimer.forEach((id) =>{
+                clearTimeout(id);
+            })
+
+            svg.selectAll(".cic").remove()
+            svg.selectAll(".txt").remove()
+            start = false
+        }
+
+        function ready(drivers,theCity,driversData,restData,custData) {
+
+
+            nodes=theCity["nodes"]
+            links = theCity["links"]
+
+            console.log(restData[0])
+            console.log(custData[0])
+            console.log(nodes[0])
+
+
+            console.log(projection2([custData[0].y,custData[0].x]))
+
+            b = projection2([restData[0].y,restData[0].x])
+
+             console.log(restData.length)
+            // svg.append("circle")
+            // .attr("cx",b[0])
+            // .attr("cy",b[1])
+            // .attr( "r", 2 )
+            // .style("fill","blue")
+
+
+            // svg.selectAll( ".node" )
+            //     .data( custData )
+            //     .enter().append("text")
+            //     .attr( "x", function(d){
+            //         return projection2([d.y,d.x])[0];
+            //     })
+            //     .attr( "y", function(d){
+            //         return projection2([d.y,d.x])[1];
+            //     })
+            //     .text(function(d){
+            //         return d.CustID})
+            //     .style("font-size","8px")
+
+
+           
+
+            
+
+
+            var arryID = {}
+
+            for(var key in nodes){
+                node = nodes[key]
+                arryID[node.id] = {'x': node.x, 'y': node.y}
+            }
+
+           
+
+            d3links = svg.selectAll( ".node" )
+                .data( links )
+                .enter().append( "line" )
+                .attr( "class", "link" )
+                .attr( "x1", function( d ){ 
+                    xSource = arryID[d.source]['x']
+                    ySource = arryID[d.source]['y']
+                    return projection2([ySource,xSource])[0];
+                   // return 0
+                 } )
+                .attr( "y1", function( d ){
+                    xSource = arryID[d.source]['x']
+                    ySource = arryID[d.source]['y']
+                    return projection2([ySource,xSource])[1];
+                   // return 0
+                } )
+                .attr( "x2", function( d ){
+                    xTarget = arryID[d.target]['x']
+                    yTarget = arryID[d.target]['y']
+                    return projection2([yTarget,xTarget])[0];
+                   // return 10
+                    } )
+                .attr( "y2", function( d ){
+                    xTarget = arryID[d.target]['x']
+                    yTarget = arryID[d.target]['y']
+                    return projection2([yTarget,xTarget])[1];
+                   // return 10;
+                } )
+                .style("stroke", "grey")
+                .attr("stroke-opacity", 0.2)
+                .attr("stroke-width",3)
+
+            svg.selectAll( ".node" )
+                .data( custData )
+                .enter().append("circle")
+                .attr( "cx", function(d){
+                    return projection2([d.y,d.x])[0];
+                })
+                .attr( "cy", function(d){
+                    return projection2([d.y,d.x])[1];
+                })
+                .attr( "r", 3 )
+                .style("fill","green")
+                .attr("opacity", 0.7)
+                
+
+            svg.selectAll( ".node" )
+                .data( restData )
+                .enter().append("circle")
+                .attr( "cx", function(d){
+                    return projection2([d.y,d.x])[0];
+                })
+                .attr( "cy", function(d){
+                    return projection2([d.y,d.x])[1];
+                })
+                .attr( "r", 3 )
+                .style("fill","blue")
+                .attr("opacity", 0.7)
+
+
+
+
+
+
+            // for(i=0;i<links.length;i++){
+            //     str = links[i].geometry
+
+            //     if(typeof(str)!= "string"){
+                    
+            //         xSource = arryID[links[i].source]['x']
+            //         ySource = arryID[links[i].source]['y']
+            //         xTarget = arryID[links[i].target]['x']
+            //         yTarget = arryID[links[i].target]['y']
+
+            //         //console.log(xSource,ySource,xTarget,yTarget)
+            //         svg.append("line")
+            //             .style("stroke", "grey")
+            //             .attr("x1",projection2([ySource,xSource])[0])
+            //             .attr("y1",projection2([ySource,xSource])[1])
+            //             .attr("x2",projection2([yTarget,xTarget])[0])
+            //             .attr("y2",projection2([yTarget,xTarget])[1])
+            //             .attr("stroke-opacity", 0.2)
+            //             .attr("stroke-width",3)
+
+            //         continue;
+
+            //     }
+                
+
+
+            //     array = str.slice(12,-1).replaceAll(",","").split(" ")
+            //     for(j=1;j<array.length-1;j+=2){
+            //         xSource = array[j-1]
+            //         ySource = array[j]
+            //         xTarget = array[j+1]
+            //         yTarget = array[j+2]
+
+            //         svg.append("line")
+            //             .style("stroke", "grey")
+            //             .attr("x1",projection2([ySource,xSource])[0])
+            //             .attr("y1",projection2([ySource,xSource])[1])
+            //             .attr("x2",projection2([yTarget,xTarget])[0])
+            //             .attr("y2",projection2([yTarget,xTarget])[1])
+            //             .attr("stroke-opacity", 0.2)
+            //             .attr("stroke-width",3)
+
+            //     }
+
+                
+
+            // }
+
+
+
+            var svg2 = d3.select("#my_dataviz")
+            svg2.append("circle").attr("cx",200).attr("cy",130).attr("r", 6).style("fill", "red")
+            svg2.append("circle").attr("cx",200).attr("cy",160).attr("r", 6).style("fill", "blue")
+            svg2.append("circle").attr("cx",200).attr("cy",190).attr("r", 6).style("fill", "green")
+            svg2.append("text").attr("x",188).attr("y",222).style("fill", "black").text("[12]")
+
+
+            svg2.append("text").attr("x", 220).attr("y", 130).text("Driver").style("font-size", "15px").attr("alignment-baseline","middle")
+                .style("fill","red")
+            svg2.append("text").attr("x", 220).attr("y", 160).text("Restaurant").style("font-size", "15px").attr("alignment-baseline","middle")
+                .style("fill","blue")
+            svg2.append("text").attr("x", 220).attr("y", 190).text("Customer").style("font-size", "15px").attr("alignment-baseline","middle")
+                .style("fill","green")
+            svg2.append("text").attr("x", 220).attr("y", 220).text("Drv: Deliv. Order #12").style("font-size", "15px").attr("alignment-baseline","middle")
+                .style("fill","black")
+
+
+        }
+
+        
+    </script>
+
+    
+
+</body>
+
+</html>
